@@ -14,17 +14,17 @@ class BorrowingTests(APITestCase):
 
     def setUp(self):
         self.user = get_user_model().objects.create_user(
-            email='testuser@example.com', password='password123'
+            email="testuser@example.com", password="password123"
         )
         self.staff_user = get_user_model().objects.create_user(
-            email='staffuser@example.com', password='password123', is_staff=True
+            email="staffuser@example.com", password="password123", is_staff=True
         )
 
         self.book1 = Book.objects.create(
-            title='Test Book 1', author='Author 1', inventory=5, daily_fee=1.00
+            title="Test Book 1", author="Author 1", inventory=5, daily_fee=1.00
         )
         self.book2 = Book.objects.create(
-            title='Test Book 2', author='Author 2', inventory=10, daily_fee=2.00
+            title="Test Book 2", author="Author 2", inventory=10, daily_fee=2.00
         )
 
         # Активна позика
@@ -32,14 +32,14 @@ class BorrowingTests(APITestCase):
             book=self.book1,
             user=self.user,
             expected_return_date=date.today() + timedelta(days=7),
-            actual_return_date=None
+            actual_return_date=None,
         )
         # Повернута позика
         self.borrowing_returned = Borrowing.objects.create(
             book=self.book2,
             user=self.user,
             expected_return_date=date.today() - timedelta(days=7),
-            actual_return_date=date.today()
+            actual_return_date=date.today(),
         )
 
     def test_list_and_filter_borrowings(self):
@@ -60,14 +60,14 @@ class BorrowingTests(APITestCase):
         self.assertEqual(len(response.data), 2)
 
         # Фільтр для активних позик
-        response = self.client.get(list_url, {'is_active': 'True'})
+        response = self.client.get(list_url, {"is_active": "True"})
         self.assertEqual(len(response.data), 1)
-        self.assertEqual(response.data[0]['id'], self.borrowing_active.id)
+        self.assertEqual(response.data[0]["id"], self.borrowing_active.id)
 
         # Фільтр для повернутих позик
-        response = self.client.get(list_url, {'is_active': 'False'})
+        response = self.client.get(list_url, {"is_active": "False"})
         self.assertEqual(len(response.data), 1)
-        self.assertEqual(response.data[0]['id'], self.borrowing_returned.id)
+        self.assertEqual(response.data[0]["id"], self.borrowing_returned.id)
 
     def test_create_borrowing(self):
         """
@@ -76,10 +76,10 @@ class BorrowingTests(APITestCase):
         self.client.force_authenticate(user=self.user)
         list_url = reverse("borrowing:borrowing-list")
         payload = {
-            'book': self.book1.title,
-            'expected_return_date': (date.today() + timedelta(days=10)).isoformat()
+            "book": self.book1.title,
+            "expected_return_date": (date.today() + timedelta(days=10)).isoformat(),
         }
-        response = self.client.post(list_url, payload, format='json')
+        response = self.client.post(list_url, payload, format="json")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(Borrowing.objects.count(), 3)
 
@@ -113,4 +113,4 @@ class BorrowingTests(APITestCase):
         response = self.client.post(return_url)
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn('The book has already been returned.', response.data['error'])
+        self.assertIn("The book has already been returned.", response.data["error"])

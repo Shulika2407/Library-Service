@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 from pathlib import Path
 from datetime import timedelta
 import os
+from dotenv import load_dotenv
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -23,16 +24,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-g5-8=hlh))d8r78x63ewkkk8u-lp#t)6z#w0f*&ha*7&+#j%s9"
 
+SECRET_KEY = os.getenv("SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-NGROK_URL = os.environ.get("NGROK_URL")
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost', 'a4eed7ac833c.ngrok-free.app']
-if NGROK_URL:
-    ALLOWED_HOSTS.append(NGROK_URL)
-# settings.py
+ALLOWED_HOSTS = ["127.0.0.1", "localhost", "192.168.0.105"]
+
 
 INTERNAL_IPS = [
     "127.0.0.1",
@@ -138,7 +136,7 @@ USE_I18N = True
 USE_TZ = True
 
 AUTH_USER_MODEL = "user.Users"
-TELEGRAM_BOT_USERNAME = "Library_service_2025_bot"
+TELEGRAM_BOT_USERNAME = os.getenv("TELEGRAM_BOT_USERNAME")
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/

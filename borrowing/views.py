@@ -24,14 +24,11 @@ import requests
 from django.contrib.auth import get_user_model
 from dotenv import load_dotenv
 from library_service import settings
+from django.views.decorators.csrf import csrf_exempt
 
 
 # Create your views here.
 load_dotenv()
-
-# logger = logging.getLogger(__name__)
-# if not logger.handlers:
-#     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 
 def send_telegram_message(chat_id: str, message: str):
@@ -113,7 +110,6 @@ class BorrowingViews(
             send_telegram_message(
                 chat_id=instance.user.telegram_chat_id, message=personal_message
             )
-            print(send_telegram_message)
 
     @extend_schema(
         parameters=[
@@ -189,21 +185,25 @@ def generate_telegram_link(request):
 
 @api_view(["POST"])
 @permission_classes([AllowAny])
+@csrf_exempt
 def telegram_webhook(request):
     """
     Handles incoming webhooks from Telegram.
     This function processes messages, specifically the '/start' command,
     to link a user's Telegram chat ID to their Django user account.
+
     """
+    print("WEBHOOK FUNCTION IS CALLED")
     try:
 
         update = request.data
+        print("Received Telegram webhook update:", update)
         message = update.get("message", {})
         text = message.get("text", "")
         chat = message.get("chat", {})
 
-
         chat_id = chat.get("id")
+        print("Chat ID:", chat_id)
 
         if not chat_id:
             # Обробляємо випадок, коли chat_id відсутній у payload.
@@ -269,91 +269,3 @@ def telegram_webhook(request):
             {"error": "Internal Server Error"},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
-
-# @api_view(["POST"])
-# @permission_classes([AllowAny])
-# def telegram_webhook(request):
-#     """
-#     Handles incoming webhooks from Telegram.
-#     This function processes messages, specifically the '/start' command,
-#     to link a user's Telegram chat ID to their Django user account.
-#     """
-#     try:
-#         # Логуємо повний вхідний payload у файл для дебагу
-#         # **Оновлено: назва файлу змінена на telegram_webhook.json**
-#         with open("telegram_webhook.json", "a", encoding="utf-8") as log_file:
-#             json.dump(request.data, log_file, ensure_ascii=False, indent=2)
-#             log_file.write("\n---\n") # Додаємо розділювач для зручності
-#
-#         logger.info(f"Отримано новий вебхук від Telegram. Payload збережено у файл.")
-#
-#         update = request.data
-#         message = update.get("message", {})
-#         text = message.get("text", "")
-#         chat = message.get("chat", {})
-#
-#         chat_id = chat.get("id")
-#
-#         if not chat_id:
-#             logger.warning("No chat_id found in webhook payload.")
-#             return Response(
-#                 {"error": "No chat_id found in webhook payload."},
-#                 status=status.HTTP_400_BAD_REQUEST,
-#             )
-#
-#         # Перевіряємо, чи починається повідомлення з команди '/start'.
-#         if text.startswith("/start"):
-#             parts = text.split(" ")
-#
-#             # Випадок 1: Команда '/start' супроводжується токеном.
-#             if len(parts) > 1:
-#                 token = parts[1]
-#
-#                 try:
-#                     # Витягуємо ID користувача з рядка токена.
-#                     user_id = int(token.split("-")[-1])
-#                     User = get_user_model()
-#                     user = User.objects.get(id=user_id)
-#
-#                     # Прив'язуємо ID чату Telegram до користувача.
-#                     user.telegram_chat_id = chat_id
-#                     user.save()
-#
-#                     # Надсилаємо повідомлення про успішне прив'язування.
-#                     send_telegram_message(
-#                         chat_id, "<b>Your account has been successfully linked!</b>"
-#                     )
-#                     logger.info(f"Акаунт користувача {user.id} успішно прив'язано до чату {chat_id}.")
-#                     return Response(status=status.HTTP_200_OK)
-#                 except (ValueError, User.DoesNotExist) as e:
-#                     # Обробляємо випадки, коли токен є недійсним або користувач не існує.
-#                     logger.error(f"Помилка прив'язки. Недійсний токен або користувач не існує: {token}")
-#                     send_telegram_message(chat_id, "Error: Invalid token.")
-#                     return Response(status=status.HTTP_400_BAD_REQUEST)
-#
-#             # Випадок 2: Команда '/start' надіслана без токена.
-#             else:
-#                 response_message = (
-#                     "Hello! To link your account, please use the special "
-#                     "link provided in your user profile."
-#                 )
-#                 # Надсилаємо повідомлення, щоб скерувати користувача.
-#                 send_telegram_message(chat_id, response_message)
-#                 logger.info(f"Користувач {chat_id} надіслав /start без токена.")
-#                 return Response(status=status.HTTP_200_OK)
-#
-#         else:
-#             # Обробка інших повідомлень.
-#             send_telegram_message(
-#                 chat_id, "I'm sorry, I don't understand that command."
-#             )
-#             logger.info(f"Користувач {chat_id} надіслав невідому команду: {text}")
-#             return Response(status=status.HTTP_200_OK)
-#
-#     except Exception as e:
-#         # Catch any unexpected errors during webhook processing.
-#         logger.exception("An unexpected error occurred during webhook processing.")
-#         return Response(
-#             {"error": "Internal Server Error"},
-#             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-#         )
