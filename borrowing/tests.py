@@ -9,7 +9,7 @@ from borrowing.models import Borrowing
 
 class BorrowingTests(APITestCase):
     """
-    Компактний набір тестів для BorrowingViews та BorrowingReturnView.
+    A compact set of tests for BorrowingViews and BorrowingReturnView.
     """
 
     def setUp(self):
@@ -27,14 +27,14 @@ class BorrowingTests(APITestCase):
             title="Test Book 2", author="Author 2", inventory=10, daily_fee=2.00
         )
 
-        # Активна позика
+        # Active loan
         self.borrowing_active = Borrowing.objects.create(
             book=self.book1,
             user=self.user,
             expected_return_date=date.today() + timedelta(days=7),
             actual_return_date=None,
         )
-        # Повернута позика
+        # Loan returned
         self.borrowing_returned = Borrowing.objects.create(
             book=self.book2,
             user=self.user,
@@ -44,34 +44,33 @@ class BorrowingTests(APITestCase):
 
     def test_list_and_filter_borrowings(self):
         """
-        Тестуємо, що користувачі бачать лише свої позики,
-        адміни - всі, та що фільтрація працює.
+        We test that users see only their loans, admins see everything, and that filtering works.
         """
         list_url = reverse("borrowing:borrowing-list")
 
-        # Звичайний користувач бачить тільки свої позики
+        # A regular user only sees their loans
         self.client.force_authenticate(user=self.user)
         response = self.client.get(list_url)
         self.assertEqual(len(response.data), 2)
 
-        # Адмін бачить всі позики
+        # Admin sees all loans
         self.client.force_authenticate(user=self.staff_user)
         response = self.client.get(list_url)
         self.assertEqual(len(response.data), 2)
 
-        # Фільтр для активних позик
+        # Filter for active loans
         response = self.client.get(list_url, {"is_active": "True"})
         self.assertEqual(len(response.data), 1)
         self.assertEqual(response.data[0]["id"], self.borrowing_active.id)
 
-        # Фільтр для повернутих позик
+        # Filter for returned loans
         response = self.client.get(list_url, {"is_active": "False"})
         self.assertEqual(len(response.data), 1)
         self.assertEqual(response.data[0]["id"], self.borrowing_returned.id)
 
     def test_create_borrowing(self):
         """
-        Тестуємо створення нової позики авторизованим користувачем.
+        We are testing the creation of a new loan by an authorized user.
         """
         self.client.force_authenticate(user=self.user)
         list_url = reverse("borrowing:borrowing-list")
@@ -85,7 +84,7 @@ class BorrowingTests(APITestCase):
 
     def test_return_borrowing(self):
         """
-        Тестуємо успішне повернення книги.
+        We are testing the successful return of the book.
         """
         self.client.force_authenticate(user=self.user)
 
@@ -101,14 +100,13 @@ class BorrowingTests(APITestCase):
 
     def test_return_already_returned_book(self):
         """
-        Тестуємо, що не можна повернути вже повернуту книгу.
+        We are testing that it is not possible to return a book that has already been returned.
         """
-        # Позначаємо книгу як повернуту
+        # Mark the book as returned
         self.borrowing_active.actual_return_date = date.today()
         self.borrowing_active.save()
 
         self.client.force_authenticate(user=self.user)
-        # Оновлено назву URL для відповідності вашому urls.py
         return_url = reverse("borrowing:return_book", args=[self.borrowing_active.id])
         response = self.client.post(return_url)
 

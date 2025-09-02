@@ -8,10 +8,10 @@ from user.serializers import UserSerializer, AuthTokenSerializer
 from user.models import Users
 
 
-# Тестування кастомної моделі користувача та менеджера
+# Testing custom user and manager model
 class UserModelTest(TestCase):
     def test_create_user(self):
-        """Перевірка створення звичайного користувача"""
+        """Verifying the creation of a regular user"""
         email = "test@example.com"
         user = get_user_model().objects.create_user(
             email=email, password="password123", first_name="John", last_name="Doe"
@@ -21,7 +21,7 @@ class UserModelTest(TestCase):
         self.assertFalse(user.is_staff)
 
     def test_create_superuser(self):
-        """Перевірка створення суперкористувача"""
+        """Verifying superuser creation"""
         email = "superuser@example.com"
         superuser = get_user_model().objects.create_superuser(
             email=email, password="password123", first_name="Admin", last_name="User"
@@ -30,10 +30,10 @@ class UserModelTest(TestCase):
         self.assertTrue(superuser.is_superuser)
 
 
-# Тестування серіалізаторів
+# Testing serializers
 class UserSerializerTest(TestCase):
     def test_user_serializer_valid_data(self):
-        """Перевірка валідації коректних даних для UserSerializer"""
+        """Validation check for correct data for UserSerializer"""
         data = {
             "email": "user@test.com",
             "password": "password123",
@@ -44,7 +44,7 @@ class UserSerializerTest(TestCase):
         self.assertTrue(serializer.is_valid())
 
     def test_auth_token_serializer_valid_credentials(self):
-        """Перевірка AuthTokenSerializer з коректними обліковими даними"""
+        """Verifying AuthTokenSerializer with correct credentials"""
         get_user_model().objects.create_user(
             email="valid@test.com", password="password123"
         )
@@ -53,11 +53,11 @@ class UserSerializerTest(TestCase):
         self.assertTrue(serializer.is_valid())
 
 
-# Тестування API-представлень
+# Testing API views
 class UserViewTest(TestCase):
     def setUp(self):
         self.client = APIClient()
-        # Використовуємо нові імена для URL-адрес
+        # Use new names for URLs
         self.register_url = reverse("users:create")
         self.manage_url = reverse("users:me")
         self.user_data = {
@@ -68,22 +68,22 @@ class UserViewTest(TestCase):
         }
 
     def test_register_user_success(self):
-        """Перевірка успішної реєстрації нового користувача"""
+        """Checking the successful registration of a new user"""
         response = self.client.post(self.register_url, self.user_data, format="json")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(Users.objects.filter(email=self.user_data["email"]).exists())
 
     def test_retrieve_and_update_user_profile(self):
-        """Перевірка отримання та оновлення даних профілю для автентифікованого користувача"""
+        """Verifying the retrieval and update of profile data for an authenticated user"""
         user = Users.objects.create_user(**self.user_data)
         self.client.force_authenticate(user=user)
 
-        # Отримання даних
+        # Getting data
         response = self.client.get(self.manage_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["email"], self.user_data["email"])
 
-        # Оновлення даних
+        # Data update
         new_data = {"first_name": "UpdatedName"}
         response = self.client.patch(self.manage_url, new_data, format="json")
         user.refresh_from_db()

@@ -39,10 +39,10 @@ def send_telegram_message(chat_id: str, message: str):
     try:
         response = requests.post(url, data=payload)
         response.raise_for_status()
-        # Возвращаем статус, чтобы было понятно, отправлено сообщение или нет.
+        # We return the status so that it is clear whether the message was sent or not.
         return f"Message sent successfully to chat_id {chat_id}."
     except requests.exceptions.RequestException as e:
-        # Возвращаем конкретную ошибку
+        # We return a specific error
         return f"Error sending Telegram message to chat_id {chat_id}: {e}"
 
 
@@ -206,47 +206,47 @@ def telegram_webhook(request):
         print("Chat ID:", chat_id)
 
         if not chat_id:
-            # Обробляємо випадок, коли chat_id відсутній у payload.
+            # Handle the case where chat_id is missing from the payload.
             return Response(
                 {"error": "No chat_id found in webhook payload."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # Перевіряємо, чи починається повідомлення з команди '/start'.
+        # Check if the message starts with the '/start' command.
         if text.startswith("/start"):
             parts = text.split(" ")
 
-            # Випадок 1: Команда '/start' супроводжується токеном.
+            # Case 1: The '/start' command is accompanied by a token.
             if len(parts) > 1:
                 token = parts[1]
 
                 try:
-                    # Витягуємо ID користувача з рядка токена.
+                    # Extract the user ID from the token string.
                     user_id = int(token.split("-")[-1])
                     User = get_user_model()
                     user = User.objects.get(id=user_id)
 
-                    # Прив'язуємо ID чату Telegram до користувача.
+                    # Bind the Telegram chat ID to the user.
                     user.telegram_chat_id = chat_id
                     user.save()
 
-                    # Надсилаємо повідомлення про успішне прив'язування.
+                    # Send a message about successful binding.
                     send_telegram_message(
                         chat_id, "<b>Your account has been successfully linked!</b>"
                     )
                     return Response(status=status.HTTP_200_OK)
                 except (ValueError, User.DoesNotExist) as e:
-                    # Обробляємо випадки, коли токен є недійсним або користувач не існує.
+                    # Handle cases where the token is invalid or the user does not exist.
                     send_telegram_message(chat_id, "Error: Invalid token.")
                     return Response(status=status.HTTP_400_BAD_REQUEST)
 
-            # Випадок 2: Команда '/start' надіслана без токена.
+            # Case 2: The '/start' command was sent without a token.
             else:
                 response_message = (
                     "Hello! To link your account, please use the special "
                     "link provided in your user profile."
                 )
-                # Надсилаємо повідомлення, щоб скерувати користувача.
+                # Send a message to redirect the user.
                 if send_telegram_message(chat_id, response_message):
                     return Response(status=status.HTTP_200_OK)
                 else:
@@ -256,7 +256,7 @@ def telegram_webhook(request):
                     )
 
         else:
-            # Обробка інших повідомлень.
+            # Processing other messages.
             send_telegram_message(
                 chat_id, "I'm sorry, I don't understand that command."
             )
